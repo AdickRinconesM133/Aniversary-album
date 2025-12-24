@@ -61,10 +61,17 @@ function Scene({ colorMap, depthMap }: {
 
     useFrame((state) => {
         const { x, y } = state.mouse;
+        const t = state.clock.getElapsedTime();
 
         if (materialRef.current) {
-            materialRef.current.uMouse.x += (x - materialRef.current.uMouse.x) * 0.05;
-            materialRef.current.uMouse.y += (y - materialRef.current.uMouse.y) * 0.05;
+            const autoX = Math.sin(t) * 0.15;
+            const autoY = Math.cos(t) * 0.09;
+
+            const targetX = x + autoX;
+            const targetY = y + autoY;
+
+            materialRef.current.uMouse.x += (targetX - materialRef.current.uMouse.x) * 0.05;
+            materialRef.current.uMouse.y += (targetY - materialRef.current.uMouse.y) * 0.05;
         }
     });
 
