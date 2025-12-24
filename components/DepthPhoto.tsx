@@ -43,6 +43,16 @@ const DepthDisplacementMaterial = shaderMaterial(
 
 extend({ DepthDisplacementMaterial });
 
+declare global {
+    namespace React {
+        namespace JSX {
+            interface IntrinsicElements {
+                depthDisplacementMaterial: any;
+            }
+        }
+    }
+}
+
 function Scene({ colorMap, depthMap }: {
     colorMap: THREE.Texture;
     depthMap: THREE.Texture;
