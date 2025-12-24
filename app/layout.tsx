@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Italianno } from "next/font/google";
+import { UIProvider } from "@/context/UIContext";
 import AudioPlayer from "@/components/AudioPlayer";
 import "./globals.css";
+
+const italianno = Italianno({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-romantic",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,12 +33,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AudioPlayer />
-        {children}
-      </body>
-    </html>
+      <UIProvider>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} ${italianno.variable} antialiased`}
+        >
+          <AudioPlayer />
+          {children}
+        </body>
+      </UIProvider>
+    </html >
   );
 }
