@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
             const monthNumber = monthMapping[monthName] || 99; // 99 para meses desconocidos
 
             const isVideo = filename.toLowerCase().match(/\.(mp4|mov|webm)$/);
+            const isLogo = parts[1].toLowerCase() === 'logo';
 
             return {
                 key: obj.key,
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
                 monthName: monthName.charAt(0).toUpperCase() + monthName.slice(1),
                 url: `/api/photos/view?key=${encodeURIComponent(obj.key)}`,
                 filename,
-                type: isVideo ? 'video' : 'image'
+                type: isLogo ? 'logo' : (isVideo ? 'video' : 'image')
             };
         }).filter((p: any) => p !== null);
 

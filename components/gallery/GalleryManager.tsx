@@ -13,14 +13,20 @@ export default function GalleryManager() {
     const [loading, setLoading] = useState(true);
 
     const years = [
-        { year: "2025", isLocked: false, cover: "/images/monet.jpg" },
+        { year: "2025", isLocked: false },
         {
             year: "2026",
             isLocked: true,
             lockedIcon: <Plane size={55} className="text-gray-400 rotate-[25deg]" />
         },
         { year: "2027", isLocked: true },
-    ];
+    ].map(y => {
+        const yearLogo = photosData.find(p => p.year === y.year && p.type === 'logo');
+        return {
+            ...y,
+            cover: yearLogo ? yearLogo.url : undefined
+        };
+    });
 
     useEffect(() => {
         async function fetchPhotos() {
@@ -44,7 +50,7 @@ export default function GalleryManager() {
         const groups: { [key: string]: { name: string, number: number, photos: any[] } } = {};
 
         photosData
-            .filter(p => p.year === year)
+            .filter(p => p.year === year && p.type !== 'logo')
             .forEach(p => {
                 if (!groups[p.monthName]) {
                     groups[p.monthName] = {
