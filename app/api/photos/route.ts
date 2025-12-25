@@ -52,13 +52,16 @@ export async function GET(request: NextRequest) {
 
             const monthNumber = monthMapping[monthName] || 99; // 99 para meses desconocidos
 
+            const isVideo = filename.toLowerCase().match(/\.(mp4|mov|webm)$/);
+
             return {
                 key: obj.key,
                 year,
                 monthNumber,
                 monthName: monthName.charAt(0).toUpperCase() + monthName.slice(1),
                 url: `/api/photos/view?key=${encodeURIComponent(obj.key)}`,
-                filename
+                filename,
+                type: isVideo ? 'video' : 'image'
             };
         }).filter((p: any) => p !== null);
 

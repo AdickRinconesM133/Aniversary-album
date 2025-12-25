@@ -56,7 +56,8 @@ export default function GalleryManager() {
                 groups[p.monthName].photos.push({
                     url: p.url,
                     caption: `Momento de ${p.monthName}`,
-                    span: "col-span-1 row-span-1"
+                    span: "col-span-1 row-span-1",
+                    type: p.type
                 });
             });
 

@@ -8,11 +8,14 @@ interface Photo {
     url: string;
     caption?: string;
     span?: string;
+    type?: 'image' | 'video';
 }
 
 interface PhotoGridProps {
     photos: Photo[];
 }
+
+import { Play } from "lucide-react";
 
 export default function PhotoGrid({ photos }: PhotoGridProps) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -53,11 +56,27 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                         onClick={() => setSelectedIndex(index)}
                         className={`relative rounded-3xl overflow-hidden group shadow-lg cursor-pointer ${photo.span || "col-span-1 row-span-1"}`}
                     >
-                        <img
-                            src={photo.url}
-                            alt={photo.caption || "Momento especial"}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
+                        {photo.type === 'video' ? (
+                            <div className="absolute inset-0 w-full h-full bg-black">
+                                <video
+                                    src={photo.url}
+                                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500"
+                                    preload="metadata"
+                                    muted
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="bg-white/20 backdrop-blur-md p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
+                                        <Play className="text-white fill-white" size={24} />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <img
+                                src={photo.url}
+                                alt={photo.caption || "Momento especial"}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                        )}
 
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
                             <p className="text-white text-base font-light italic">
@@ -101,7 +120,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                             <ChevronRight size={48} />
                         </button>
 
-                        {/* Photo Container */}
+                        {/* Media Container */}
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
@@ -111,16 +130,30 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                         >
                             <div className="relative w-full h-[75vh] flex items-center justify-center">
                                 <AnimatePresence mode="wait">
-                                    <motion.img
-                                        key={selectedIndex}
-                                        src={photos[selectedIndex].url}
-                                        alt={photos[selectedIndex].caption}
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 1.05 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                                    />
+                                    {photos[selectedIndex].type === 'video' ? (
+                                        <motion.video
+                                            key={selectedIndex}
+                                            src={photos[selectedIndex].url}
+                                            controls
+                                            autoPlay
+                                            className="max-w-full max-h-full rounded-lg shadow-2xl"
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 1.05 }}
+                                            transition={{ duration: 0.3 }}
+                                        />
+                                    ) : (
+                                        <motion.img
+                                            key={selectedIndex}
+                                            src={photos[selectedIndex].url}
+                                            alt={photos[selectedIndex].caption}
+                                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 1.05 }}
+                                            transition={{ duration: 0.3 }}
+                                        />
+                                    )}
                                 </AnimatePresence>
                             </div>
 
