@@ -4,6 +4,7 @@ import { Italianno } from "next/font/google";
 import { UIProvider } from "@/context/UIContext";
 import AudioPlayer from "@/components/AudioPlayer";
 import "./globals.css";
+import SmoothScroll from "@/components/SmoothScroll";
 
 const italianno = Italianno({
   weight: "400",
@@ -37,8 +38,10 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${italianno.variable} antialiased`}
         >
-          <AudioPlayer />
-          {children}
+          <SmoothScroll>
+            <AudioPlayer />
+            {children}
+          </SmoothScroll>
         </body>
       </UIProvider>
     </html >
