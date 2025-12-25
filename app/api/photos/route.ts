@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+// Definimos la interfaz localmente para asegurar que el build pase
+interface CloudflareEnv {
+    PHOTOS_BUCKET: any; // Usamos any para evitar conflictos con tipos globales de R2
+}
+
 export async function GET(request: NextRequest) {
     try {
         // Obtenemos el contexto de Cloudflare
@@ -15,8 +20,8 @@ export async function GET(request: NextRequest) {
             }, { status: 500 });
         }
 
-        const { env } = context;
-        const bucket = env.PHOTOS_BUCKET as R2Bucket;
+        const { env } = context as unknown as { env: CloudflareEnv };
+        const bucket = env.PHOTOS_BUCKET;
 
         if (!bucket) {
             return NextResponse.json({ error: 'R2 Bucket not bound' }, { status: 500 });
@@ -27,7 +32,7 @@ export async function GET(request: NextRequest) {
 
         // Transformamos los objetos en una estructura útil para el frontend
         // Esperamos estructura: YYYY/MM_nombre/foto.jpg
-        const photos = listing.objects.map((obj) => {
+        const photos = listing.objects.map((obj: any) => {
             const parts = obj.key.split('/');
 
             // Si la estructura no es la esperada, devolvemos algo básico
@@ -52,7 +57,7 @@ export async function GET(request: NextRequest) {
                 url: `/api/photos/view?key=${encodeURIComponent(obj.key)}`,
                 filename
             };
-        }).filter(p => p !== null);
+        }).filter((p: any) => p !== null);
 
         return NextResponse.json({ photos });
     } catch (error: any) {

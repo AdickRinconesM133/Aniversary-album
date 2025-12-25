@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+interface CloudflareEnv {
+    PHOTOS_BUCKET: any;
+}
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
@@ -16,8 +20,8 @@ export async function GET(request: NextRequest) {
             return new Response('Ambiente local detectado. R2 no está disponible.', { status: 500 });
         }
 
-        const { env } = context;
-        const bucket = env.PHOTOS_BUCKET as R2Bucket;
+        const { env } = context as unknown as { env: CloudflareEnv };
+        const bucket = env.PHOTOS_BUCKET;
 
         const object = await bucket.get(key);
 
