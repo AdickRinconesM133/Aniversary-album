@@ -74,6 +74,8 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                             <img
                                 src={photo.url}
                                 alt={photo.caption || "Momento especial"}
+                                loading="lazy"
+                                decoding="async"
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             />
                         )}
