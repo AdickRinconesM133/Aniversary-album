@@ -19,6 +19,7 @@ import { Play } from "lucide-react";
 
 export default function PhotoGrid({ photos }: PhotoGridProps) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [visibleCount, setVisibleCount] = useState(8); // Mostramos 8 inicialmente
 
     // Close on Escape key
     useEffect(() => {
@@ -43,16 +44,21 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
         }
     };
 
+    const loadMore = () => {
+        setVisibleCount(prev => prev + 8);
+    };
+
+    const visiblePhotos = photos.slice(0, visibleCount);
+
     return (
         <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[250px]">
-                {photos.map((photo, index) => (
+                {visiblePhotos.map((photo, index) => (
                     <motion.div
                         key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: index * 0.05 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6, delay: (index % 8) * 0.05 }}
                         onClick={() => setSelectedIndex(index)}
                         className={`relative rounded-3xl overflow-hidden group shadow-lg cursor-pointer ${photo.span || "col-span-1 row-span-1"}`}
                     >
@@ -88,6 +94,17 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                     </motion.div>
                 ))}
             </div>
+
+            {visibleCount < photos.length && (
+                <div className="flex justify-center mt-12">
+                    <button
+                        onClick={loadMore}
+                        className="px-8 py-3 rounded-full border border-black/10 text-black/40 hover:text-black hover:border-black/30 transition-all uppercase text-[10px] tracking-[0.3em]"
+                    >
+                        Cargar más momentos
+                    </button>
+                </div>
+            )}
 
             {/* Lightbox Overlay */}
             <AnimatePresence>
