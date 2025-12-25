@@ -27,11 +27,6 @@ export default function GalleryManager() {
             try {
                 const res = await fetch('/api/photos');
                 const data = await res.json();
-
-                if (data.error) {
-                    console.warn("API Error:", data.error);
-                }
-
                 if (data.photos) {
                     setPhotosData(data.photos);
                 }
@@ -44,17 +39,32 @@ export default function GalleryManager() {
         fetchPhotos();
     }, []);
 
-    // Filtramos las fotos para el año seleccionado y las ordenamos por mes
-    const getPhotosForYear = (year: string) => {
-        return photosData
+    // Agrupamos las fotos por mes para el año seleccionado
+    const getGroupedPhotos = (year: string) => {
+        const groups: { [key: string]: { name: string, number: number, photos: any[] } } = {};
+
+        photosData
             .filter(p => p.year === year)
-            .sort((a, b) => a.monthNumber - b.monthNumber) // Orden cronológico (1 al 12)
-            .map(p => ({
-                url: p.url,
-                caption: p.monthName ? `Mes de ${p.monthName}` : "Momento especial",
-                span: "col-span-1 row-span-1"
-            }));
+            .forEach(p => {
+                if (!groups[p.monthName]) {
+                    groups[p.monthName] = {
+                        name: p.monthName,
+                        number: p.monthNumber,
+                        photos: []
+                    };
+                }
+                groups[p.monthName].photos.push({
+                    url: p.url,
+                    caption: `Momento de ${p.monthName}`,
+                    span: "col-span-1 row-span-1"
+                });
+            });
+
+        // Ordenamos los grupos de meses cronológicamente (Enero a Diciembre)
+        return Object.values(groups).sort((a, b) => a.number - b.number);
     };
+
+    const groupedPhotos = selectedYear ? getGroupedPhotos(selectedYear) : [];
 
     return (
         <section className="min-h-screen bg-white py-12 px-6 md:px-20 overflow-hidden">
@@ -107,7 +117,7 @@ export default function GalleryManager() {
                             <ArrowLeft size={16} /> Volver a los años
                         </button>
 
-                        <div className="text-left mb-16">
+                        <div className="text-left mb-24">
                             <h2 className="text-7xl md:text-9xl text-black font-[family-name:var(--font-romantic)]">
                                 {selectedYear}
                             </h2>
@@ -116,8 +126,20 @@ export default function GalleryManager() {
 
                         {loading ? (
                             <div className="h-64 flex items-center justify-center text-gray-300 italic">Cargando vuestros recuerdos...</div>
-                        ) : getPhotosForYear(selectedYear).length > 0 ? (
-                            <PhotoGrid photos={getPhotosForYear(selectedYear)} />
+                        ) : groupedPhotos.length > 0 ? (
+                            <div className="space-y-24">
+                                {groupedPhotos.map((group) => (
+                                    <div key={group.name} className="space-y-8">
+                                        <div className="flex items-center gap-6">
+                                            <h3 className="text-3xl md:text-4xl text-black font-[family-name:var(--font-romantic)]">
+                                                {group.name}
+                                            </h3>
+                                            <div className="h-[1px] flex-grow bg-black/5" />
+                                        </div>
+                                        <PhotoGrid photos={group.photos} />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 rounded-3xl text-gray-300">
                                 <p className="font-light italic text-xl">Aún no hay fotos en este año.</p>
