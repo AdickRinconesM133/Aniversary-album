@@ -23,8 +23,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aniversary Album",
-  description: "Aniversary Album for Liana and Adick",
+  title: "Nuestro Álbum de Aniversario",
+  description: "Álbum de aniversario de Liana y Adick — nuestros mejores momentos juntos.",
+  openGraph: {
+    title: "Nuestro Álbum de Aniversario",
+    description: "Álbum de aniversario de Liana y Adick — nuestros mejores momentos juntos.",
+    type: "website",
+    locale: "es_AR",
+  },
 };
 
 export default function RootLayout({
@@ -33,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <UIProvider>
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${italianno.variable} antialiased`}
@@ -44,6 +50,6 @@ export default function RootLayout({
           </SmoothScroll>
         </body>
       </UIProvider>
-    </html >
+    </html>
   );
 }

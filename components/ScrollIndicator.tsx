@@ -31,6 +31,7 @@ export default function ScrollIndicator() {
                         animate={{ opacity: 1, scale: 1, y: [0, 10, 0] }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={scrollToMessagePanel}
+                        aria-label="Desplazar hacia abajo"
                         transition={{
                             opacity: { duration: 0.5 },
                             y: { duration: 4, repeat: Infinity, ease: "easeInOut" }

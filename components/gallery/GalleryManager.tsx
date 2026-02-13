@@ -1,53 +1,58 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plane, ArrowLeft } from "lucide-react";
+import { Plane, ArrowLeft, RefreshCw } from "lucide-react";
 import YearCard from "./YearCard";
 import PhotoGrid from "./PhotoGrid";
+import PhotoSkeleton from "./PhotoSkeleton";
 import Link from "next/link";
+import { YEARS_CONFIG } from "@/lib/constants";
+import type { PhotoMeta, PhotoItem, MonthGroup, ApiPhotosResponse } from "@/lib/types";
 
 export default function GalleryManager() {
     const [selectedYear, setSelectedYear] = useState<string | null>(null);
-    const [photosData, setPhotosData] = useState<any[]>([]);
+    const [photosData, setPhotosData] = useState<PhotoMeta[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const years = [
-        { year: "2025", isLocked: false },
-        {
-            year: "2026",
-            isLocked: true,
-            lockedIcon: <Plane size={55} className="text-gray-400 rotate-[25deg]" />
-        },
-        { year: "2027", isLocked: true },
-    ].map(y => {
+    const fetchPhotos = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/photos');
+            const data: ApiPhotosResponse = await res.json();
+            if (data.error) {
+                setError(data.error);
+            } else if (data.photos) {
+                setPhotosData(data.photos);
+            }
+        } catch (err) {
+            setError("No se pudieron cargar las fotos. Verificá tu conexión.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPhotos();
+    }, [fetchPhotos]);
+
+    const lockedIcons: Record<string, React.ReactNode> = {
+        plane: <Plane size={55} className="text-gray-400 rotate-[25deg]" />,
+    };
+
+    const years = YEARS_CONFIG.map(y => {
         const yearLogo = photosData.find(p => p.year === y.year && p.type === 'logo');
         return {
             ...y,
-            cover: yearLogo ? yearLogo.url : undefined
+            cover: yearLogo ? yearLogo.url : undefined,
+            lockedIcon: y.lockedIcon ? lockedIcons[y.lockedIcon] : undefined
         };
     });
 
-    useEffect(() => {
-        async function fetchPhotos() {
-            try {
-                const res = await fetch('/api/photos');
-                const data = await res.json();
-                if (data.photos) {
-                    setPhotosData(data.photos);
-                }
-            } catch (err) {
-                console.error("Error fetching photos:", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchPhotos();
-    }, []);
-
-    // Agrupamos las fotos por mes para el año seleccionado
-    const getGroupedPhotos = (year: string) => {
-        const groups: { [key: string]: { name: string, number: number, photos: any[] } } = {};
+    const getGroupedPhotos = (year: string): MonthGroup[] => {
+        const groups: Record<string, MonthGroup> = {};
 
         photosData
             .filter(p => p.year === year && p.type !== 'logo')
@@ -59,15 +64,15 @@ export default function GalleryManager() {
                         photos: []
                     };
                 }
-                groups[p.monthName].photos.push({
+                const photo: PhotoItem = {
                     url: p.url,
                     caption: `Momento de ${p.monthName}`,
                     span: "col-span-1 row-span-1",
-                    type: p.type
-                });
+                    type: p.type as 'image' | 'video'
+                };
+                groups[p.monthName].photos.push(photo);
             });
 
-        // Ordenamos los grupos de meses cronológicamente (Enero a Diciembre)
         return Object.values(groups).sort((a, b) => a.number - b.number);
     };
 
@@ -86,7 +91,7 @@ export default function GalleryManager() {
                     >
                         <div className="flex justify-between items-center mb-16">
                             <Link href="/">
-                                <button className="text-black/40 hover:text-black uppercase text-xs tracking-widest flex items-center gap-2">
+                                <button aria-label="Volver al inicio" className="text-black/40 hover:text-black uppercase text-xs tracking-widest flex items-center gap-2">
                                     <ArrowLeft size={16} /> Volver al Inicio
                                 </button>
                             </Link>
@@ -95,6 +100,18 @@ export default function GalleryManager() {
                             </h2>
                             <div className="w-24" />
                         </div>
+
+                        {error && (
+                            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                <p className="text-red-400 text-sm">{error}</p>
+                                <button
+                                    onClick={fetchPhotos}
+                                    className="flex items-center gap-2 px-6 py-2 rounded-full border border-black/10 text-black/50 hover:text-black hover:border-black/30 transition-all text-xs uppercase tracking-widest"
+                                >
+                                    <RefreshCw size={14} /> Reintentar
+                                </button>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {years.map((y) => (
@@ -119,6 +136,7 @@ export default function GalleryManager() {
                     >
                         <button
                             onClick={() => setSelectedYear(null)}
+                            aria-label="Volver a los años"
                             className="mb-8 text-black/40 hover:text-black uppercase text-xs tracking-[0.3em] flex items-center gap-2"
                         >
                             <ArrowLeft size={16} /> Volver a los años
@@ -132,7 +150,17 @@ export default function GalleryManager() {
                         </div>
 
                         {loading ? (
-                            <div className="h-64 flex items-center justify-center text-gray-300 italic">Cargando vuestros recuerdos...</div>
+                            <PhotoSkeleton />
+                        ) : error ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                <p className="text-red-400 text-sm">{error}</p>
+                                <button
+                                    onClick={fetchPhotos}
+                                    className="flex items-center gap-2 px-6 py-2 rounded-full border border-black/10 text-black/50 hover:text-black hover:border-black/30 transition-all text-xs uppercase tracking-widest"
+                                >
+                                    <RefreshCw size={14} /> Reintentar
+                                </button>
+                            </div>
                         ) : groupedPhotos.length > 0 ? (
                             <div className="space-y-24">
                                 {groupedPhotos.map((group) => (

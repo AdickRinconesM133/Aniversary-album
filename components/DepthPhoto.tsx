@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import React, { useRef, useState, useEffect } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { shaderMaterial } from "@react-three/drei";
 import { extend } from "@react-three/fiber";
@@ -12,7 +12,6 @@ const DepthDisplacementMaterial = shaderMaterial(
         uTexture: new THREE.Texture(),
         uDepthMap: new THREE.Texture(),
     },
-    // Vertex Shader
     `
   varying vec2 vUv;
   void main() {
@@ -20,22 +19,15 @@ const DepthDisplacementMaterial = shaderMaterial(
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
   `,
-    // Fragment Shader (La magia ocurre aquí)
     `
   varying vec2 vUv;
   uniform sampler2D uTexture;
   uniform sampler2D uDepthMap;
   uniform vec2 uMouse;
   void main() {
-    // Leemos el valor del mapa de profundidad (0.0 a 1.0)
     vec4 depth = texture2D(uDepthMap, vUv);
-    
-    // Desplazamos las coordenadas UV basándonos en el mouse y la profundidad
-    // Multiplicamos por 0.05 para que el movimiento sea sutil
     vec2 displacement = uMouse * depth.r * 0.05;
     vec2 uv = vUv + displacement;
-    
-    // Dibujamos el color de la textura original con las nuevas UV movidas
     gl_FragColor = texture2D(uTexture, uv);
   }
   `
@@ -53,13 +45,17 @@ declare global {
     }
 }
 
-function Scene({ colorMap, depthMap }: {
+function Scene({ colorMap, depthMap, isVisible }: {
     colorMap: THREE.Texture;
     depthMap: THREE.Texture;
+    isVisible: boolean;
 }) {
     const materialRef = useRef<any>(null);
+    const { invalidate } = useThree();
 
     useFrame((state) => {
+        if (!isVisible) return;
+
         const { x, y } = state.mouse;
         const t = state.clock.getElapsedTime();
 
@@ -73,6 +69,8 @@ function Scene({ colorMap, depthMap }: {
             materialRef.current.uMouse.x += (targetX - materialRef.current.uMouse.x) * 0.05;
             materialRef.current.uMouse.y += (targetY - materialRef.current.uMouse.y) * 0.05;
         }
+
+        invalidate();
     });
 
     return (
@@ -89,15 +87,31 @@ function Scene({ colorMap, depthMap }: {
 }
 
 export default function DepthPhoto() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isVisible, setIsVisible] = useState(true);
+
     const [colorMap, depthMap] = useLoader(THREE.TextureLoader, [
         '/images/monet.jpg',
         '/images/monet_depth.png',
     ]);
 
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => setIsVisible(entry.isIntersecting),
+            { threshold: 0.1 }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <div className="w-full h-screen bg-black">
-            <Canvas camera={{ position: [0, 0, 1] }}>
-                <Scene colorMap={colorMap} depthMap={depthMap} />
+        <div ref={containerRef} className="w-full h-screen bg-black">
+            <Canvas camera={{ position: [0, 0, 1] }} frameloop="demand">
+                <Scene colorMap={colorMap} depthMap={depthMap} isVisible={isVisible} />
             </Canvas>
         </div>
     );

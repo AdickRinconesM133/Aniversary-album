@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { ANNIVERSARY_DATE } from "@/lib/constants";
 
 interface UIContextType {
     showCountdown: boolean;
@@ -12,21 +13,23 @@ const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
     const [showCountdown, setShowCountdown] = useState(true);
-
-    // Calculamos si está bloqueado (antes del 25 de Diciembre 2025)
-    // Usamos useEffect para que el cálculo ocurra en el cliente
     const [isLocked, setIsLocked] = useState(true);
 
     useEffect(() => {
-        const checkLock = () => {
-            const now = new Date();
-            const anniversary = new Date('2025-12-25T00:00:00');
-            setIsLocked(now < anniversary);
-        };
+        const now = new Date();
+        const diff = ANNIVERSARY_DATE.getTime() - now.getTime();
 
-        checkLock();
-        const interval = setInterval(checkLock, 1000); // Re-verificar cada segundo
-        return () => clearInterval(interval);
+        if (diff <= 0) {
+            setIsLocked(false);
+            return;
+        }
+
+        setIsLocked(true);
+        const timeout = setTimeout(() => {
+            setIsLocked(false);
+        }, diff);
+
+        return () => clearTimeout(timeout);
     }, []);
 
     return (

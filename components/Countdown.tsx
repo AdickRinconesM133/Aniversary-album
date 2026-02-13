@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUI } from "@/context/UIContext";
+import { ANNIVERSARY_DATE } from "@/lib/constants";
 
 export default function Countdown() {
     const { showCountdown } = useUI();
@@ -17,10 +18,12 @@ export default function Countdown() {
         const calculateTimeLeft = () => {
             const now = new Date();
             const currentYear = now.getFullYear();
-            let targetDate = new Date(currentYear, 11, 25);
+            const targetMonth = ANNIVERSARY_DATE.getMonth();
+            const targetDay = ANNIVERSARY_DATE.getDate();
+            let targetDate = new Date(currentYear, targetMonth, targetDay);
 
             if (now > targetDate) {
-                targetDate = new Date(currentYear + 1, 11, 25);
+                targetDate = new Date(currentYear + 1, targetMonth, targetDay);
             }
 
             const difference = targetDate.getTime() - now.getTime();
@@ -35,6 +38,7 @@ export default function Countdown() {
             }
         };
 
+        calculateTimeLeft();
         const timer = setInterval(calculateTimeLeft, 1000);
 
         return () => clearInterval(timer);

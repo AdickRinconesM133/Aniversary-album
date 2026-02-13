@@ -1,47 +1,90 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
-
-interface Photo {
-    url: string;
-    caption?: string;
-    span?: string;
-    type?: 'image' | 'video';
-}
+import { ChevronLeft, ChevronRight, X, Play } from "lucide-react";
+import type { PhotoItem } from "@/lib/types";
 
 interface PhotoGridProps {
-    photos: Photo[];
+    photos: PhotoItem[];
 }
-
-import { Play } from "lucide-react";
 
 export default function PhotoGrid({ photos }: PhotoGridProps) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-    const [visibleCount, setVisibleCount] = useState(8); // Mostramos 8 inicialmente
+    const [visibleCount, setVisibleCount] = useState(8);
+    const triggerRef = useRef<HTMLElement | null>(null);
+    const lightboxRef = useRef<HTMLDivElement>(null);
 
-    // Close on Escape key
-    useEffect(() => {
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === "Escape") setSelectedIndex(null);
-        };
-        window.addEventListener("keydown", handleEsc);
-        return () => window.removeEventListener("keydown", handleEsc);
-    }, []);
-
-    const showNext = (e?: React.MouseEvent) => {
+    const showNext = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (selectedIndex !== null) {
             setSelectedIndex((selectedIndex + 1) % photos.length);
         }
-    };
+    }, [selectedIndex, photos.length]);
 
-    const showPrev = (e?: React.MouseEvent) => {
+    const showPrev = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (selectedIndex !== null) {
             setSelectedIndex((selectedIndex - 1 + photos.length) % photos.length);
         }
+    }, [selectedIndex, photos.length]);
+
+    const closeLightbox = useCallback(() => {
+        setSelectedIndex(null);
+        triggerRef.current?.focus();
+        triggerRef.current = null;
+    }, []);
+
+    useEffect(() => {
+        if (selectedIndex === null) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            switch (e.key) {
+                case "Escape":
+                    closeLightbox();
+                    break;
+                case "ArrowLeft":
+                    setSelectedIndex((prev) =>
+                        prev !== null ? (prev - 1 + photos.length) % photos.length : null
+                    );
+                    break;
+                case "ArrowRight":
+                    setSelectedIndex((prev) =>
+                        prev !== null ? (prev + 1) % photos.length : null
+                    );
+                    break;
+                case "Tab":
+                    e.preventDefault();
+                    if (lightboxRef.current) {
+                        const focusable = lightboxRef.current.querySelectorAll<HTMLElement>(
+                            'button, [tabindex]:not([tabindex="-1"])'
+                        );
+                        const first = focusable[0];
+                        const last = focusable[focusable.length - 1];
+                        if (e.shiftKey) {
+                            if (document.activeElement === first) last?.focus();
+                            else (document.activeElement as HTMLElement)?.previousElementSibling?.closest<HTMLElement>('button')?.focus();
+                        } else {
+                            if (document.activeElement === last) first?.focus();
+                        }
+                    }
+                    break;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [selectedIndex, photos.length, closeLightbox]);
+
+    useEffect(() => {
+        if (selectedIndex !== null) {
+            lightboxRef.current?.focus();
+        }
+    }, [selectedIndex]);
+
+    const openLightbox = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+        triggerRef.current = e.currentTarget;
+        setSelectedIndex(index);
     };
 
     const loadMore = () => {
@@ -59,7 +102,10 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.6, delay: (index % 8) * 0.05 }}
-                        onClick={() => setSelectedIndex(index)}
+                        onClick={(e) => openLightbox(index, e)}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={photo.caption || "Ver foto"}
                         className={`relative rounded-3xl overflow-hidden group shadow-lg cursor-pointer ${photo.span || "col-span-1 row-span-1"}`}
                     >
                         {photo.type === 'video' ? (
@@ -99,6 +145,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                 <div className="flex justify-center mt-12">
                     <button
                         onClick={loadMore}
+                        aria-label="Cargar más fotos"
                         className="px-8 py-3 rounded-full border border-black/10 text-black/40 hover:text-black hover:border-black/30 transition-all uppercase text-[10px] tracking-[0.3em]"
                     >
                         Cargar más momentos
@@ -110,36 +157,41 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
             <AnimatePresence>
                 {selectedIndex !== null && (
                     <motion.div
+                        ref={lightboxRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Visor de fotos"
+                        tabIndex={-1}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setSelectedIndex(null)}
-                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-10"
+                        onClick={closeLightbox}
+                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 outline-none"
                     >
-                        {/* Close Button */}
                         <button
-                            onClick={() => setSelectedIndex(null)}
+                            onClick={closeLightbox}
+                            aria-label="Cerrar"
                             className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[110]"
                         >
                             <X size={40} />
                         </button>
 
-                        {/* Navigation Buttons */}
                         <button
-                            onClick={showPrev}
+                            onClick={(e) => showPrev(e)}
+                            aria-label="Foto anterior"
                             className="absolute left-4 md:left-12 text-white/30 hover:text-white transition-colors z-[110] bg-white/5 p-4 rounded-full hover:bg-white/10"
                         >
                             <ChevronLeft size={48} />
                         </button>
 
                         <button
-                            onClick={showNext}
+                            onClick={(e) => showNext(e)}
+                            aria-label="Foto siguiente"
                             className="absolute right-4 md:right-12 text-white/30 hover:text-white transition-colors z-[110] bg-white/5 p-4 rounded-full hover:bg-white/10"
                         >
                             <ChevronRight size={48} />
                         </button>
 
-                        {/* Media Container */}
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
@@ -155,6 +207,7 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                                             src={photos[selectedIndex].url}
                                             controls
                                             autoPlay
+                                            preload="auto"
                                             className="max-w-full max-h-full rounded-lg shadow-2xl"
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}

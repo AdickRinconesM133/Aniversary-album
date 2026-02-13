@@ -19,8 +19,12 @@ export default function AudioPlayer() {
     const toggleMute = () => {
         if (audioRef.current) {
             if (isMuted) {
-                audioRef.current.play().catch((error) => {
-                    console.error("Error playing audio:", error);
+                audioRef.current.play().catch(() => {
+                    const resume = () => {
+                        audioRef.current?.play();
+                        document.removeEventListener('click', resume);
+                    };
+                    document.addEventListener('click', resume);
                 });
                 audioRef.current.muted = false;
             } else {
@@ -37,6 +41,7 @@ export default function AudioPlayer() {
                 onClick={toggleMute}
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.1 }}
+                aria-label={isMuted ? "Reproducir música" : "Silenciar música"}
                 className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-white hover:bg-white/20 transition-colors"
             >
                 <AnimatePresence mode="wait" initial={false}>
@@ -55,6 +60,7 @@ export default function AudioPlayer() {
                 onClick={() => setShowCountdown(!showCountdown)}
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.1 }}
+                aria-label={showCountdown ? "Ocultar cuenta regresiva" : "Mostrar cuenta regresiva"}
                 className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-white hover:bg-white/20 transition-colors"
             >
                 <AnimatePresence mode="wait" initial={false}>
